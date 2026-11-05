@@ -76,6 +76,21 @@ def test_bug_a3_dua_kutip_dalam_string_jadi_satu_kutip():
         tokenize("'abc''")
 
 
+def test_bug_a4_and_lebih_kuat_daripada_or():
+    # Bug A4: dulu AND dan OR punya presedensi yang sama, jadi
+    # "a = 1 OR b = 2 AND c = 3" dibaca "(a = 1 OR b = 2) AND c = 3".
+    # Spesifikasi 3.1: AND lebih kuat, jadi artinya "a = 1 OR (b = 2 AND c = 3)".
+    where = satu_statement("SELECT id FROM t WHERE a = 1 OR b = 2 AND c = 3").where
+    # Akar pohon harus OR.
+    assert where.op == "OR"
+    # Anak kiri: a = 1.
+    assert where.left.op == "=" and where.left.left.name == "a"
+    # Anak kanan: (b = 2 AND c = 3).
+    assert where.right.op == "AND"
+    assert where.right.left.left.name == "b"
+    assert where.right.right.left.name == "c"
+
+
 # ---- Test untuk TODO yang dilengkapi (T1 dan T3) --------------------
 
 def test_todo_t3_komentar_blok_lintas_baris_dan_berisi_bintang():
