@@ -181,6 +181,9 @@ class Parser:
             kind = "INNER"
         elif self._match_kw("LEFT"):
             kind = "LEFT"
+            # Grammar: "LEFT" [ "OUTER" ] "JOIN". Kata OUTER boleh ada, boleh tidak.
+            # LEFT OUTER JOIN artinya sama dengan LEFT JOIN, jadi kind tetap "LEFT".
+            self._match_kw("OUTER")
         self._expect_kw("JOIN")
         source = self._table_ref()
         self._expect_kw("ON")
