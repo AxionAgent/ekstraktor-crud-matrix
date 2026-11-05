@@ -123,6 +123,24 @@ def test_bug_a6_left_outer_join_diterima():
 
 # ---- Test untuk TODO yang dilengkapi (T1 dan T3) --------------------
 
+def test_todo_t1_insert_select_tanpa_daftar_kolom():
+    # TODO T1: INSERT INTO ... SELECT, di sini tanpa daftar kolom.
+    stmt = satu_statement("INSERT INTO arsip SELECT * FROM pesanan WHERE total > 10")
+    assert isinstance(stmt, ast.Insert)
+    assert stmt.table.name == "arsip"
+    # Tidak ada daftar kolom dan tidak ada VALUES, isinya datang dari query.
+    assert stmt.columns == [] and stmt.values == []
+    assert isinstance(stmt.query, ast.Select)
+    assert stmt.query.sources[0].name == "pesanan"
+
+
+def test_todo_t1_insert_select_dalam_kurung_ditolak():
+    # Grammar hanya mengizinkan select_stmt TANPA kurung sesudah nama tabel.
+    # "(" diikuti SELECT bukan daftar kolom, jadi harus error dan tidak crash.
+    script = parse_sql("INSERT INTO arsip (SELECT id FROM pesanan)")
+    assert len(script.errors) == 1 and script.statements == []
+
+
 def test_todo_t3_komentar_blok_lintas_baris_dan_berisi_bintang():
     # TODO T3: komentar blok /* ... */ boleh lintas baris dan boleh berisi "*".
     toks = tokenize("/* baris 1 * masih komentar\n   baris 2 ** */ SELECT")
@@ -149,3 +167,17 @@ def test_tepi_komentar_blok_tidak_bersarang():
     # menutup komentar. Sisa " c */" harus dibaca sebagai token biasa.
     assert token_list("/* a /* b */ c */") == [
         (T.IDENT, "c"), (T.STAR, "*"), (T.OP, "/")]
+
+
+def test_tepi_and_milik_between_tidak_tertukar_dengan_and_logika():
+    # Kenapa berisiko: BETWEEN memakai kata AND juga. Kalau parser salah,
+    # AND milik BETWEEN bisa dianggap AND logika, atau sebaliknya.
+    # Spesifikasi 3.2: batas BETWEEN adalah additive, jadi AND pertama milik BETWEEN.
+    where = satu_statement(
+        "SELECT id FROM t WHERE x BETWEEN 1 AND 5 AND y = 2 OR z = 3").where
+    # Bentuk yang benar: ((x BETWEEN 1 AND 5) AND y = 2) OR z = 3
+    assert where.op == "OR"
+    assert where.left.op == "AND"
+    between = where.left.left
+    assert isinstance(between, ast.Between)
+    assert (between.low.value, between.high.value) == ("1", "5")

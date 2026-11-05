@@ -218,8 +218,11 @@ class Parser:
                 rows.append(self._value_row())
             return ast.Insert(table, columns, rows, None, line=start.line)
         if self._check_kw("SELECT"):
-            # TODO(T1): dukung INSERT INTO ... SELECT ... (SPESIFIKASI.md bagian 3 dan 5).
-            raise ParseError("INSERT ... SELECT belum didukung", self._peek())
+            # INSERT INTO ... SELECT ... (SPESIFIKASI 3): baris yang dimasukkan
+            # berasal dari hasil query, jadi tidak ada VALUES (values = []).
+            # Parsing SELECT-nya cukup memakai ulang fungsi _select yang sudah ada.
+            query = self._select()
+            return ast.Insert(table, columns, [], query, line=start.line)
         raise ParseError("diharapkan VALUES atau SELECT", self._peek())
 
     def _value_row(self) -> list:
