@@ -176,9 +176,15 @@ class Lexer:
         while self._peek().isalnum() or self._peek() == "_":
             self._advance()
         text = self.src[start:self.pos]
-        if text in KEYWORDS:
-            self._add(TokenType.KEYWORD, text, line, col)
+        # Keyword tidak peka huruf besar/kecil (SPESIFIKASI 2.2).
+        # Jadi kata dibandingkan dengan KEYWORDS dalam versi huruf besarnya.
+        # Contoh: "select", "Select", dan "SELECT" semuanya jadi "SELECT".
+        upper = text.upper()
+        if upper in KEYWORDS:
+            # Nilai token keyword selalu disimpan dalam huruf besar.
+            self._add(TokenType.KEYWORD, upper, line, col)
         else:
+            # Bukan keyword: simpan apa adanya, nanti parser yang mengecilkan hurufnya.
             self._add(TokenType.IDENT, text, line, col)
 
 
