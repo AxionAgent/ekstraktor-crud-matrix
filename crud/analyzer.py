@@ -60,7 +60,9 @@ def _collect(expr, usage, op: str) -> None:
         for value in expr.values or []:
             _collect(value, usage, op)
         if expr.query is not None:
-            _collect_select(expr.query, usage, op)
+            # Subquery selalu dibaca (SPESIFIKASI.md bagian 5), apa pun
+            # jenis statement luarnya (mis. UPDATE).
+            _collect_select(expr.query, usage, "R")
     elif isinstance(expr, ast.Between):
         _collect(expr.expr, usage, op)
         _collect(expr.low, usage, op)
@@ -68,7 +70,7 @@ def _collect(expr, usage, op: str) -> None:
     elif isinstance(expr, ast.IsNull):
         _collect(expr.expr, usage, op)
     elif isinstance(expr, (ast.Exists, ast.Subquery)):
-        _collect_select(expr.query, usage, op)
+        _collect_select(expr.query, usage, "R")
     elif isinstance(expr, ast.FunctionCall):
         for arg in expr.args:
             _collect(arg, usage, op)

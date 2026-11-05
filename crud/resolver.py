@@ -139,6 +139,7 @@ class Resolver:
         self._push()
         self._declare_source(dele.table)
         self._expr(dele.where)
+        self._pop()
 
     # ---- ekspresi -------------------------------------------------------
     def _expr(self, expr) -> None:
@@ -177,8 +178,13 @@ class Resolver:
             else:
                 col.resolved = _target_of(entry)
             return
-        # TODO(T2): kolom tanpa qualifier (SPESIFIKASI.md bagian 4.3).
-        #   - tepat satu tabel di scope terdalam -> isi col.resolved
-        #   - lebih dari satu tabel              -> warning "ambigu tanpa skema"
-        #   - tidak ada tabel                    -> warning
-        pass
+        # Tanpa qualifier (SPESIFIKASI.md bagian 4.3): hanya scope
+        # terdalam yang dilihat.
+        if self.scope is None or not self.scope.entries:
+            self._warning(f"kolom '{col.name}' tanpa tabel di scope", col.line)
+            return
+        entries = list(self.scope.entries.values())
+        if len(entries) == 1:
+            col.resolved = _target_of(entries[0])
+        else:
+            self._warning(f"kolom '{col.name}' ambigu tanpa skema", col.line)
