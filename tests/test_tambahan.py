@@ -74,3 +74,33 @@ def test_bug_a3_dua_kutip_dalam_string_jadi_satu_kutip():
     # Kalau string berakhir dengan '' tanpa kutip penutup, string belum ditutup.
     with pytest.raises(LexError):
         tokenize("'abc''")
+
+
+# ---- Test untuk TODO yang dilengkapi (T1 dan T3) --------------------
+
+def test_todo_t3_komentar_blok_lintas_baris_dan_berisi_bintang():
+    # TODO T3: komentar blok /* ... */ boleh lintas baris dan boleh berisi "*".
+    toks = tokenize("/* baris 1 * masih komentar\n   baris 2 ** */ SELECT")
+    assert toks[0].type == T.KEYWORD and toks[0].value == "SELECT"
+    # Posisi token sesudah komentar tetap benar: baris 2, kolom 18.
+    assert (toks[0].line, toks[0].col) == (2, 18)
+    # Komentar blok tidak menghasilkan token apa pun.
+    assert token_list("/***/") == []
+
+
+def test_todo_t3_komentar_blok_tidak_ditutup_adalah_lexerror():
+    # Spesifikasi 2.3: komentar blok yang tidak ditutup adalah LexError.
+    # Posisi error menunjuk ke awal komentar (baris 2, kolom 3).
+    with pytest.raises(LexError) as info:
+        tokenize("SELECT 1\n  /* lupa ditutup *")
+    assert (info.value.line, info.value.col) == (2, 3)
+
+
+# ---- Test kasus tepi (2 dari 5, sisanya di bagian Hafiz) ------------
+
+def test_tepi_komentar_blok_tidak_bersarang():
+    # Kenapa berisiko: banyak orang mengira komentar blok bisa bersarang.
+    # Spesifikasi 2.3 bilang TIDAK bersarang, jadi "*/" pertama langsung
+    # menutup komentar. Sisa " c */" harus dibaca sebagai token biasa.
+    assert token_list("/* a /* b */ c */") == [
+        (T.IDENT, "c"), (T.STAR, "*"), (T.OP, "/")]
