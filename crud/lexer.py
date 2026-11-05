@@ -116,7 +116,14 @@ class Lexer:
             self._add(TokenType.OP, ch, line, col)
             return
         if ch == "<":
-            op = "<=" if self._match("=") else "<"
+            # Ambil operator terpanjang yang cocok (maximal munch, SPESIFIKASI 2.5).
+            # Lihat satu karakter sesudah "<" untuk memilih "<=", "<>", atau "<".
+            if self._match("="):
+                op = "<="
+            elif self._match(">"):
+                op = "<>"
+            else:
+                op = "<"
             self._add(TokenType.OP, op, line, col)
             return
         if ch == ">":

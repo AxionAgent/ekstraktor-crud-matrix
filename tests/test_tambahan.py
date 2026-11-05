@@ -51,3 +51,15 @@ def test_bug_a1_keyword_tidak_peka_huruf_besar_kecil():
     # Akibatnya di parser: query huruf kecil sekarang bisa di-parse.
     stmt = satu_statement("select id from pelanggan where aktif = 1")
     assert stmt.sources[0].name == "pelanggan"
+
+
+def test_bug_a2_operator_tidak_sama_dengan_satu_token():
+    # Bug A2: dulu "<>" dipecah jadi dua token "<" dan ">".
+    # Spesifikasi 2.5: lexer selalu mengambil operator terpanjang (maximal munch).
+    assert token_list("a <> b") == [(T.IDENT, "a"), (T.OP, "<>"), (T.IDENT, "b")]
+    # Operator lain yang diawali "<" tetap benar.
+    assert token_list("a <= b < c") == [
+        (T.IDENT, "a"), (T.OP, "<="), (T.IDENT, "b"), (T.OP, "<"), (T.IDENT, "c")]
+    # Akibatnya di parser: WHERE dengan "<>" tidak lagi dianggap error sintaks.
+    stmt = satu_statement("SELECT id FROM pesanan WHERE status <> 'LUNAS'")
+    assert stmt.where.op == "<>"
