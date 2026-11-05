@@ -91,6 +91,36 @@ def test_bug_a4_and_lebih_kuat_daripada_or():
     assert where.right.right.left.name == "c"
 
 
+def test_bug_a5_error_recovery_berhenti_di_titik_koma():
+    # Bug A5: dulu setelah error, parser membuang SEMUA token sampai akhir file,
+    # jadi statement valid sesudah statement rusak ikut hilang.
+    # Spesifikasi 6: buang token sampai dan termasuk ";" berikutnya, lalu lanjut.
+    sql = (
+        "SELECT id FROM pelanggan;\n"
+        "SELECT id nama, FROM pesanan;\n"       # rusak: koma sebelum FROM
+        "UPDATE produk SET stok = stok - 1;\n"
+        "DELETE FROM keranjang"
+    )
+    script = parse_sql(sql)
+    # Statement rusak menghasilkan tepat satu error, di baris 2.
+    assert len(script.errors) == 1
+    assert script.errors[0].line == 2
+    # Tiga statement valid tetap diproses, termasuk dua yang sesudah error.
+    assert [type(s).__name__ for s in script.statements] == ["Select", "Update", "Delete"]
+
+
+def test_bug_a6_left_outer_join_diterima():
+    # Bug A6: dulu "LEFT OUTER JOIN" ditolak dengan error "diharapkan JOIN".
+    # Grammar: join = [ "INNER" | "LEFT" [ "OUTER" ] ] "JOIN" table_ref "ON" expr
+    stmt = satu_statement(
+        "SELECT c.id FROM crm.pelanggan c LEFT OUTER JOIN crm.alamat a ON a.pelanggan_id = c.id")
+    # LEFT OUTER JOIN sama artinya dengan LEFT JOIN.
+    assert stmt.joins[0].kind == "LEFT"
+    assert stmt.joins[0].source.name == "crm.alamat"
+    # "INNER OUTER JOIN" tidak ada di grammar, jadi tetap harus error.
+    assert len(parse_sql("SELECT a.id FROM a INNER OUTER JOIN b ON b.x = a.x").errors) == 1
+
+
 # ---- Test untuk TODO yang dilengkapi (T1 dan T3) --------------------
 
 def test_todo_t3_komentar_blok_lintas_baris_dan_berisi_bintang():
