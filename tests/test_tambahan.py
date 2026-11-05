@@ -181,3 +181,10 @@ def test_tepi_and_milik_between_tidak_tertukar_dengan_and_logika():
     between = where.left.left
     assert isinstance(between, ast.Between)
     assert (between.low.value, between.high.value) == ("1", "5")
+
+
+# =====================================================================
+# BAGIAN HAFIZ: resolver, analyzer, dan data (Bab 11)
+# =====================================================================
+# Diisi Hafiz: test regresi untuk bug B1, B2, B3, ... dan 3 test kasus tepi.
+# Aturan: test regresi harus gagal sebelum perbaikan dan lulus sesudahnya.
