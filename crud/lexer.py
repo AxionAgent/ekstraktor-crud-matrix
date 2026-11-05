@@ -164,6 +164,13 @@ class Lexer:
                 raise LexError("string tidak ditutup", line, col)
             ch = self._advance()
             if ch == "'":
+                # Ketemu kutip. Ada dua kemungkinan (SPESIFIKASI 2.4):
+                # 1) kutip berikutnya juga kutip -> '' artinya SATU karakter kutip,
+                #    jadi simpan satu kutip lalu lanjut membaca string.
+                if self._match("'"):
+                    chars.append("'")
+                    continue
+                # 2) kutip berdiri sendiri -> ini kutip penutup, string selesai.
                 break
             chars.append(ch)
         self._add(TokenType.STRING, "".join(chars), line, col)

@@ -63,3 +63,14 @@ def test_bug_a2_operator_tidak_sama_dengan_satu_token():
     # Akibatnya di parser: WHERE dengan "<>" tidak lagi dianggap error sintaks.
     stmt = satu_statement("SELECT id FROM pesanan WHERE status <> 'LUNAS'")
     assert stmt.where.op == "<>"
+
+
+def test_bug_a3_dua_kutip_dalam_string_jadi_satu_kutip():
+    # Bug A3: dulu 'O''Brien' dibaca sebagai DUA string: 'O' dan 'Brien'.
+    # Spesifikasi 2.4: dua kutip berturut-turut di dalam string artinya satu kutip.
+    assert token_list("'O''Brien'") == [(T.STRING, "O'Brien")]
+    # String kosong dan string yang isinya hanya satu kutip.
+    assert token_list("'' ''''") == [(T.STRING, ""), (T.STRING, "'")]
+    # Kalau string berakhir dengan '' tanpa kutip penutup, string belum ditutup.
+    with pytest.raises(LexError):
+        tokenize("'abc''")
